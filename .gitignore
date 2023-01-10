@@ -6,3 +6,4 @@ clashroyalebuildabot/data/screenshots
 *.egg-info
 dist/
 build/
+screen.jpg

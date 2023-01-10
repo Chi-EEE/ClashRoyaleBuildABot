@@ -10,7 +10,7 @@ class Screen:
     def __init__(self):
         # Physical size: 720x1280 -> self.width = 720, self.height = 1280
         window_size = subprocess.check_output(['adb', 'shell', 'wm', 'size'])
-        window_size = window_size.decode('ascii').replace('Physical size: ', '')
+        window_size = window_size.decode('ascii').removeprefix('Physical size: ')
         self.width, self.height = [int(i) for i in window_size.split('x')]
 
     @staticmethod
