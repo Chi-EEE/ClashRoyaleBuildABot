@@ -1,1 +1,1 @@
-py resize.py %*
+py %0\..\resize.py %*
