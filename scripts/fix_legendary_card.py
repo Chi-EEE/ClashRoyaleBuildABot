@@ -21,6 +21,9 @@ mask = cv2.imread(rf'{script_location}\legendary_card_mask.png', 0)
 # Get the black pixels of the mask image
 _, mask = cv2.threshold(mask, 0, 255, cv2.THRESH_BINARY)
 mask = cv2.resize(mask, (WIDTH,HEIGHT))
+        
+# Add an extra dimension in the last axis.
+mask = np.expand_dims(mask, axis=-1)
 
 # Inverts the mask
 inverted_mask = cv2.bitwise_not(mask)
@@ -35,9 +38,6 @@ for arg in inputs:
         
         # Gets the inverted masked area of the original image
         transparent_crop = cv2.bitwise_and(original_image, original_image, mask=inverted_mask)
-        
-        # Add an extra dimension in the last axis.
-        mask = np.expand_dims(mask, axis=-1)
         
         original_area = np.sum(mask, axis=-1)
         
