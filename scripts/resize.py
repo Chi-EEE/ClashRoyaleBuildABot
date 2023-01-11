@@ -3,8 +3,8 @@ import cv2
 import numpy as np
 import os
 
-if not os.path.exists("out"):
-    os.mkdir("out")
+if not os.path.exists(r"scripts\out"):
+    os.mkdir(r"scripts\out")
 inputs = sys.argv[1:]
 
 # read mask image
@@ -17,32 +17,28 @@ mask = cv2.resize(mask, (195,250))
 for arg in inputs:
     if arg.endswith(".png"):
         # Load image as Numpy array in BGR order
-        na = cv2.imread(arg)
+        original_image = cv2.imread(arg)
         
         # Resize the image
-        na = cv2.resize(na, (195,250))
+        original_image = cv2.resize(original_image, (195,250))
         
         inverted_mask = cv2.bitwise_not(mask)
         
-        original_crop = cv2.bitwise_and(na, na, mask=mask)
-        transparent_crop = cv2.bitwise_and(na, na, mask=inverted_mask)
+        # original_crop = cv2.bitwise_and(original_image, original_image, mask=mask)
+        transparent_crop = cv2.bitwise_and(original_image, original_image, mask=inverted_mask)
         
         # Make a True/False mask of pixels whose BGR values sum to more than zero
         alpha = np.sum(transparent_crop, axis=-1) > 5
 
-        # Convert True/False to 0/255 and change type to "uint8" to match "na"
+        # Convert True/False to 0/255 and change type to "uint8" to match "original_image"
         alpha = np.uint8(alpha * 255)
 
-        # mask = circle[..., 3] != 0
-        # background[mask] = circle[..., :3][mask]
-        # Stack new alpha layer with existing image to go from BGR to BGRA, i.e. 3 channels to 4 channels
-        # res = np.dstack((na, alpha))
-        first_mask = original_crop[..., 3] != 0
-        mask = alpha[..., 3] != 0
+        alpha = cv2.merge([alpha]*3)
 
-        first_mask[mask] = first_mask[..., :3][mask]
+        result = original_image.copy()
+        result[inverted_mask!=0] = alpha[inverted_mask!=0]
 
         # Save result
-        path = "out/" + os.path.basename(arg)
+        path = rf"scripts\out\{os.path.basename(arg)}"
         print("saving image at :", path)
-        cv2.imwrite(path, first_mask)
+        cv2.imwrite(path, result)
