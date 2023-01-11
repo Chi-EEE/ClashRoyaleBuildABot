@@ -1,1 +1,1 @@
-py %0\..\resize.py %*
+py %0\..\fix_legendary_card.py %*
