@@ -17,7 +17,7 @@ if not os.path.exists(rf"{script_location}\out"):
 inputs = sys.argv[1:]
 
 # read mask image
-mask = cv2.imread(rf'{script_location}\assets\legendary_card_mask.png', 0)
+mask = cv2.imread(rf'{script_location}\assets\champion_card_mask.png', 0)
 
 _, mask = cv2.threshold(mask, 0, 255, cv2.THRESH_BINARY)
 mask = cv2.resize(mask, (WIDTH,HEIGHT))
