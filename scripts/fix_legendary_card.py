@@ -1,6 +1,5 @@
 import sys
 import cv2
-import numpy as np
 import os
 
 # To get card images: https://github.com/smlbiobot/cr-cardgen/tree/master/cardgen/ui_spells_out
