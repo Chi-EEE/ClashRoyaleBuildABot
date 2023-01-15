@@ -1,6 +1,6 @@
 import os
 
-from PIL import Image
+import cv2
 import numpy as np
 from clashroyalebuildabot.data.constants import CARD_CONFIG, DATA_DIR, MULTI_HASH_SCALE, MULTI_HASH_INTERCEPT, DECK_SIZE, HAND_SIZE
 from scipy.optimize import linear_sum_assignment
@@ -24,8 +24,9 @@ class CardDetector:
 
         Using just a normal hash, the detector struggles with the white "timer" region on the cards
         """
-        gray_image = np.array(image.resize((self.hash_size, self.hash_size), Image.BILINEAR).convert('L'),
-                              dtype=np.float32).ravel()
+        gray_image = cv2.resize(image, (self.hash_size, self.hash_size), interpolation = cv2.INTER_LINEAR)
+        gray_image = cv2.cvtColor(gray_image, cv2.COLOR_BGR2GRAY)
+        gray_image = np.ravel(gray_image)
         light_image = MULTI_HASH_SCALE * gray_image + MULTI_HASH_INTERCEPT
         dark_image = (gray_image - MULTI_HASH_INTERCEPT) / MULTI_HASH_SCALE
         multi_hash = np.vstack([gray_image, light_image, dark_image]).astype(np.float32)
@@ -35,8 +36,9 @@ class CardDetector:
         """
         Compute a hash by flattening a resized grayscale image
         """
-        hash_ = np.array(image.resize((self.hash_size, self.hash_size), Image.BILINEAR).convert('L'),
-                         dtype=np.float32).ravel()
+        hash_ = cv2.resize(image, (self.hash_size, self.hash_size), interpolation = cv2.INTER_LINEAR)
+        hash_ = cv2.cvtColor(hash_, cv2.COLOR_BGR2GRAY)
+        hash_ = np.ravel(hash_)
         return hash_
 
     def _calculate_cards_and_card_hashes(self):
@@ -52,7 +54,7 @@ class CardDetector:
                 name, _, cost, type_, target, _ = line.strip().replace('"', '').split(',')
                 if name in self.card_names:
                     path = os.path.join(DATA_DIR, 'images', 'cards', f'{name}.png')
-                    card = Image.open(path)
+                    card = cv2.imread(path)
                     multi_hash = self._calculate_multi_hash(card)
                     card_hashes[i] = np.tile(np.expand_dims(multi_hash, axis=2), (1, 1, HAND_SIZE))
                     cards.append({'name': name, 'cost': int(cost), 'type': type_, 'target': target})
@@ -60,7 +62,7 @@ class CardDetector:
 
         # Add the blank card
         path = os.path.join(DATA_DIR, 'images', 'cards', 'blank.png')
-        card = Image.open(path)
+        card = cv2.imread(path)
         multi_hash = self._calculate_multi_hash(card)
         card_hashes[-1] = np.tile(np.expand_dims(multi_hash, axis=2), (1, 1, HAND_SIZE))
         cards.append({'name': 'blank', 'cost': 11, 'type': 'n/a', 'target': 'n/a'})
@@ -74,8 +76,7 @@ class CardDetector:
         Use a linear sum assignment to decide which image matches which card
         (This avoid duplicate predictions)
         """
-        hash_diffs = np.zeros((DECK_SIZE + 1, HAND_SIZE), dtype=np.float32)
-        crops = [image.crop(position) for position in CARD_CONFIG]
+        crops = [image[position[1]:position[3], position[0]:position[2]].copy() for position in CARD_CONFIG]
         crop_hashes = np.array([self._calculate_hash(crop) for crop in crops]).T
         hash_diffs = np.mean(np.amin(np.abs(crop_hashes - self.card_hashes), axis=1), axis=1).T
         _, idx = linear_sum_assignment(hash_diffs)

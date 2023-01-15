@@ -1,7 +1,7 @@
 import subprocess
 
 import numpy as np
-from PIL import Image
+import cv2
 
 from clashroyalebuildabot.data.constants import SCREENSHOT_WIDTH, SCREENSHOT_HEIGHT
 
@@ -25,8 +25,16 @@ class Screen:
         Take a screenshot of the emulator
         """
         screenshot_bytes = subprocess.run(['adb', 'exec-out', 'screencap'], check=True, capture_output=True).stdout
-        screenshot = Image.frombuffer('RGBA', (self.width, self.height), screenshot_bytes[12:], 'raw', 'RGBX', 0, 1)
-        screenshot = screenshot.convert('RGB').resize((SCREENSHOT_WIDTH, SCREENSHOT_HEIGHT), Image.BILINEAR)
+        # Convert screenshot_bytes to a numpy array
+        screenshot = np.frombuffer(screenshot_bytes[12:], np.uint8)
+        # Reshape array to the original image shape
+        screenshot = screenshot.reshape((self.height, self.width, 4))
+        # Remove the alpha channel
+        screenshot = screenshot[:, :, :3]
+        # Resize the image
+        screenshot = cv2.resize(screenshot, (SCREENSHOT_WIDTH, SCREENSHOT_HEIGHT), interpolation = cv2.INTER_LINEAR)
+        # Change color from BGR to RGB
+        screenshot = cv2.cvtColor(screenshot, cv2.COLOR_BGR2RGB)
         return screenshot
 
 
@@ -34,7 +42,7 @@ def main():
     cls = Screen()
     screenshot = cls.take_screenshot()
     print(np.array(screenshot).shape)
-    screenshot.save('screen.jpg')
+    cv2.imwrite(img=screenshot, filename='screen.jpg')
 
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 import os
 
 import numpy as np
-from PIL import Image
+import cv2
 
 from clashroyalebuildabot.data.constants import UNITS, UNIT_Y_END, UNIT_Y_START, UNIT_SIZE, DATA_DIR, CARD_TO_UNITS
 from clashroyalebuildabot.state.onnx_detector import OnnxDetector
@@ -41,7 +41,7 @@ class UnitDetector(OnnxDetector):
             # Assume that the unit detection is correct, and say that the unit is an enemy
             side = 'enemy'
         else:
-            crop = image.crop(bbox)
+            crop = image[bbox[1]:bbox[3], bbox[0]:bbox[2]].copy()
             side = self.side_detector.run(crop)
 
         return side
@@ -51,8 +51,18 @@ class UnitDetector(OnnxDetector):
         """
         Preprocess an image
         """
-        image = image.crop((0, UNIT_Y_START * image.height, image.width, UNIT_Y_END * image.height))
-        image = image.resize((UNIT_SIZE, UNIT_SIZE), Image.BICUBIC)
+        height, width = image.shape[0], image.shape[1]
+        LEFT = 0
+        TOP = int(UNIT_Y_START * height)
+        RIGHT = width
+        BOTTOM = int(UNIT_Y_END * height)
+        
+        # Crop the image
+        image = image[TOP:TOP+BOTTOM, LEFT:LEFT+RIGHT].copy()
+        
+        # Resize the image
+        image = cv2.resize(image, (UNIT_SIZE, UNIT_SIZE), interpolation=cv2.INTER_CUBIC)
+
         image = np.array(image, dtype=np.float32)
         image = np.expand_dims(image.transpose(2, 0, 1), axis=0)
         image = image / 255
@@ -81,7 +91,7 @@ class UnitDetector(OnnxDetector):
         return clean_pred
 
     def run(self, image):
-        height, width = image.height, image.width
+        height, width = image.shape[0], image.shape[1]
 
         # Preprocessing
         np_image = self._preprocess(image)

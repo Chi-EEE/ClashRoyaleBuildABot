@@ -1,5 +1,5 @@
 import numpy as np
-from PIL import Image
+import cv2
 
 from clashroyalebuildabot.data.constants import NUMBER_CONFIG, ELIXIR_BOUNDING_BOX, KING_HP, KING_LEVEL_2_X, \
     NUMBER_MIN_CONFIDENCE, NUMBER_HEIGHT, NUMBER_WIDTH
@@ -9,7 +9,7 @@ from clashroyalebuildabot.state.onnx_detector import OnnxDetector
 class NumberDetector(OnnxDetector):
     @staticmethod
     def _calculate_elixir(image):
-        crop = image.crop(ELIXIR_BOUNDING_BOX)
+        crop = image[ELIXIR_BOUNDING_BOX[1]:ELIXIR_BOUNDING_BOX[3], ELIXIR_BOUNDING_BOX[0]:ELIXIR_BOUNDING_BOX[2]]
         std = np.array(crop).std(axis=(0, 2))
         rolling_std = np.convolve(std, np.ones(10) / 10, mode='valid')
         change_points = np.nonzero(rolling_std < 50)[0]
@@ -67,7 +67,7 @@ class NumberDetector(OnnxDetector):
 
     def _preprocess(self, image):
         # Resize the image
-        image = image.resize((NUMBER_WIDTH, NUMBER_HEIGHT), Image.BICUBIC)
+        image = cv2.resize(image, (NUMBER_WIDTH, NUMBER_HEIGHT), interpolation=cv2.INTER_CUBIC)
 
         # Convert the image to grayscale
         image = np.array(image, dtype=np.float32)
@@ -88,7 +88,7 @@ class NumberDetector(OnnxDetector):
         # Preprocessing
         crops = np.empty((len(NUMBER_CONFIG), 3, NUMBER_WIDTH, NUMBER_WIDTH), dtype=np.float32)
         for i, (_, bounding_box) in enumerate(NUMBER_CONFIG):
-            crop = image.crop(bounding_box)
+            crop = image[bounding_box[1]:bounding_box[3], bounding_box[0]:bounding_box[2]].copy()
             crops[i] = self._preprocess(crop)
 
         # Inference

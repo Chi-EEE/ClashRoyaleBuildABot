@@ -1,5 +1,5 @@
 import numpy as np
-from PIL import Image
+import cv2
 
 from clashroyalebuildabot.data.constants import SIDE_SIZE
 from clashroyalebuildabot.state.onnx_detector import OnnxDetector
@@ -7,7 +7,7 @@ from clashroyalebuildabot.state.onnx_detector import OnnxDetector
 
 class SideDetector(OnnxDetector):
     def _preprocess(self, image):
-        image = image.resize((SIDE_SIZE, SIDE_SIZE), Image.BICUBIC)
+        image = cv2.resize(image, (SIDE_SIZE, SIDE_SIZE), interpolation=cv2.INTER_CUBIC)
         image = np.array(image, dtype=np.float32)
         image = image / 255
         image = np.expand_dims(image, axis=0)

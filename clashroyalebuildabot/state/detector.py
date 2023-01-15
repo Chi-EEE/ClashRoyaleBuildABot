@@ -1,6 +1,5 @@
 import os
-
-from PIL import ImageDraw, ImageFont
+import cv2
 
 from clashroyalebuildabot.state.card_detector import CardDetector
 from clashroyalebuildabot.state.number_detector import NumberDetector
@@ -23,7 +22,7 @@ class Detector:
         if self.debug:
             os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
             os.makedirs(LABELS_DIR, exist_ok=True)
-            self.font = ImageFont.load_default()
+            self.font = cv2.FONT_HERSHEY_SIMPLEX
 
         self.card_detector = CardDetector(self.card_names)
         self.number_detector = NumberDetector(os.path.join(DATA_DIR, 'number.onnx'))
@@ -31,8 +30,11 @@ class Detector:
         self.screen_detector = ScreenDetector()
         self.side_detector = SideDetector(os.path.join(DATA_DIR, 'side.onnx'))
 
-    def _draw_text(self, d, bbox, text):
-        text_width, text_height = self.font.getsize(text)
+    def _draw_text(self, image, bbox, text):
+        font_scale = 1.0
+        thickness = 1
+        size, _ = cv2.getTextSize(text, self.font, font_scale, thickness)
+        text_width, text_height = size
         y_offset = 5
         x = (bbox[0] + bbox[2] - text_width) / 2
         y = bbox[1] - y_offset
@@ -42,10 +44,9 @@ class Detector:
                      bbox[1] - y_offset - text_height,
                      mid_x + text_width / 2 + 5,
                      bbox[1] - y_offset)
-        d.rectangle(text_bbox,
-                    fill='black')
-        d.rectangle(tuple(bbox))
-        d.text((x, y - text_height), text=text)
+        cv2.rectangle(image, (int(text_bbox[0]), int(text_bbox[1])), (int(text_bbox[2]), int(text_bbox[3])), (0,0,0),-1)
+        cv2.rectangle(image, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0,0,0),1)
+        cv2.rectangle(image, (int(text_bbox[0]), int(text_bbox[1])), (int(text_bbox[2]), int(text_bbox[3])), (0,0,0),-1)
 
     def run(self, image):
         state = {'units': self.unit_detector.run(image),
@@ -54,13 +55,12 @@ class Detector:
                  'screen': self.screen_detector.run(image)}
 
         if self.debug:
-            d = ImageDraw.Draw(image)
-            width, height = image.width, image.height
+            height, width = image.shape[0], image.shape[1]
             labels = []
 
             for k, v in state['numbers'].items():
-                d.rectangle(tuple(v['bounding_box']))
-                self._draw_text(d, v['bounding_box'], str(v['number']))
+                cv2.rectangle(image, (v['bounding_box'][0], v['bounding_box'][1]), (v['bounding_box'][2], v['bounding_box'][3]), (0,0,0),1)
+                self._draw_text(image, v['bounding_box'], str(v['number']))
 
             for side in ['ally', 'enemy']:
                 for unit_name, v in state['units'][side].items():
@@ -73,17 +73,18 @@ class Detector:
                                        (bbox[2] - bbox[0]) / width,
                                        (bbox[3] - bbox[1]) / height]
                         labels.append([unit_name, *yolov5_bbox])
-                        self._draw_text(d, bbox, unit_name)
+                        self._draw_text(image, bbox, unit_name)
 
             for card, position in zip(state['cards'], CARD_CONFIG):
-                d.rectangle(tuple(position))
-                self._draw_text(d, position, card['name'])
+                cv2.rectangle(image, (position[0], position[1]), (position[2], position[3]), (0,0,0),1)
+                self._draw_text(image, position, card['name'])
 
             n_screenshots = len(os.listdir(SCREENSHOTS_DIR))
             n_labels = len(os.listdir(LABELS_DIR))
             basename = max(n_labels, n_screenshots) + 1
             image_save_path = os.path.join(SCREENSHOTS_DIR, f"{basename}.jpg")
-            image.save(image_save_path)
+            cv2.imwrite(image_save_path, image)
+            print("saved")
 
             label_save_path = os.path.join(LABELS_DIR, f"{basename}.txt")
             with open(label_save_path, 'w') as f:

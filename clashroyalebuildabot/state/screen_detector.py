@@ -1,7 +1,7 @@
 import os
 
 import numpy as np
-from PIL import Image
+import cv2
 
 from clashroyalebuildabot.data.constants import SCREEN_CONFIG, DATA_DIR
 
@@ -17,14 +17,13 @@ class ScreenDetector:
         screen_hashes = np.zeros((len(SCREEN_CONFIG), self.hash_size * self.hash_size * 3), dtype=np.int32)
         for i, name in enumerate(SCREEN_CONFIG.keys()):
             path = os.path.join(f'{DATA_DIR}/images/screen', f'{name}.png')
-            image = Image.open(path)
-            hash_ = np.array(image.resize((self.hash_size, self.hash_size), Image.BILINEAR)).flatten()
+            image = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+            hash_ = np.array(cv2.resize(image, (self.hash_size, self.hash_size), interpolation=cv2.INTER_LINEAR)).flatten()
             screen_hashes[i] = hash_
         return screen_hashes
 
     def run(self, image):
-        crop_hashes = np.array([np.array(image.crop(v['bbox'])
-                                         .resize((self.hash_size, self.hash_size), Image.BILINEAR))
+        crop_hashes = np.array([np.array(cv2.resize(image[v['bbox'][1]:v['bbox'][3], v['bbox'][0]:v['bbox'][2]].copy(), (self.hash_size, self.hash_size), interpolation=cv2.INTER_LINEAR))
                                 .flatten()
                                 for v in SCREEN_CONFIG.values()])
         hash_diffs = np.mean(np.abs(crop_hashes - self.screen_hashes), axis=1)
