@@ -26,9 +26,9 @@ class Screen:
         """
         screenshot_bytes = subprocess.run(['adb', 'exec-out', 'screencap'], check=True, capture_output=True).stdout
         # Convert screenshot_bytes to a numpy array
-        screenshot = np.frombuffer(screenshot_bytes[12:], np.uint8)
-        # Reshape array to the original image shape
-        screenshot = screenshot.reshape((self.height, self.width, 4))
+        screenshot = np.copy(np.frombuffer(screenshot_bytes[12:], np.uint8))
+        # Resize array to the original image shape
+        screenshot = np.resize(screenshot, (self.height, self.width, 4))
         # Remove the alpha channel
         screenshot = screenshot[:, :, :3]
         # Resize the image

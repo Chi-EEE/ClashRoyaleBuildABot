@@ -23,7 +23,7 @@ setup(
     url='https://github.com/Pbatch/ClashRoyaleBuildABot',
     download_url='https://github.com/Pbatch/ClashRoyaleBuildABot/releases',
     install_requires=[
-        "Pillow", "numpy", "scipy",
+        "opencv-python", "numpy", "scipy",
         "onnxruntime",
     ],
     packages=find_packages(),
