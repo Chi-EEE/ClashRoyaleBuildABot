@@ -1,0 +1,1 @@
+py %0\..\fix_card.py %*

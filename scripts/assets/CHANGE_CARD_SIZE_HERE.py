@@ -1,0 +1,2 @@
+WIDTH = 197
+HEIGHT = 251

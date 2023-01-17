@@ -3,12 +3,10 @@ import cv2
 import numpy as np
 import os
 
-# To get card images: https://github.com/smlbiobot/cr-cardgen/tree/master/cardgen/ui_spells_out
+import assets.CHANGE_CARD_SIZE_HERE as card_size
 
-# Change these values if you want the card size to be different
-WIDTH = 195
-HEIGHT = 250
-# 
+# To get card images: https://github.com/smlbiobot/cr-cardgen/tree/master/cardgen/card-src-236x300
+
 BGR_THRESHOLD = 15
 
 script_location = os.path.dirname(os.path.realpath(__file__))
@@ -22,7 +20,7 @@ mask = cv2.imread(rf'{script_location}\assets\legendary_card_mask.png', 0)
 
 # Get the black pixels of the mask image
 _, mask = cv2.threshold(mask, 0, 255, cv2.THRESH_BINARY)
-mask = cv2.resize(mask, (WIDTH,HEIGHT))
+mask = cv2.resize(mask, (card_size.WIDTH,card_size.HEIGHT))
         
 # Add an extra dimension in the last axis.
 mask = np.expand_dims(mask, axis=-1)
@@ -36,7 +34,7 @@ for arg in inputs:
         original_image = cv2.imread(arg, cv2.IMREAD_UNCHANGED)
 
         # Resize the image
-        original_image = cv2.resize(original_image, (WIDTH,HEIGHT))
+        original_image = cv2.resize(original_image, (card_size.WIDTH,card_size.HEIGHT))
         
         original_image = cv2.cvtColor(original_image,cv2.COLOR_BGR2BGRA) 
         
