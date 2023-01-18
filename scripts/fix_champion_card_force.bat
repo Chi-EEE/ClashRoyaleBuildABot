@@ -1,0 +1,1 @@
+py %0\..\fix_champion_card_force.py %*
